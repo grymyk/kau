@@ -1,0 +1,313 @@
+\documentclass[pdf]{beamer}
+
+\usetheme{Warsaw}
+%\usetheme{Madrid}
+
+
+\usepackage{beamerthemesplit}
+\usepackage{epsf}
+\usepackage{graphicx}
+%\usepackage[cp1251]{inputenc}
+\usepackage{amssymb,amsmath}  % use mathematical symbols
+\usepackage{amsfonts}
+%\usepackage[boxruled,boxed]{algorithm2e}
+%\usepackage[latin1]{inputenc}
+%\setbeamercovered{transparent}  % it makes all items in a slide transparent but shows the current
+\setbeamertemplate{navigation symbols}{}
+
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+
+\begin{document}
+\newtheorem{sentence}{Sentence}
+\newtheorem{follow}{Corollary}
+\newtheorem{consequence}{Consequence}
+\newcommand{\bP}{{\mathbf P}}
+\newtheorem{myProperty}{Property}
+\newcommand{\bQ}{{\mathbf Q}}
+\newcommand{\bR}{{\mathbf R}}
+\newcommand{\bL}{{\mathbf L}}
+\newcommand{\bM}{{\mathbf M}}
+\newcommand{\bU}{{\mathbf U}}
+\newcommand{\bA}{{\mathbf A}}
+\newcommand{\bB}{{\mathbf B}}
+\newcommand{\bC}{{\mathbf C}}
+\newcommand{\bD}{{\mathbf D}}
+\newcommand{\bd}{{\mathbf d}}
+\newcommand{\bl}{{\mathbf l}}
+\newcommand{\bu}{{\mathbf u}}
+\newcommand{\bp}{{\mathbf p}}
+\newcommand{\bq}{{\mathbf q}}
+\newcommand{\bm}{{\mathbf m}}
+\newcommand{\bw}{{\mathbf w}}
+\newcommand{\bW}{{\mathbf W}}
+
+
+\newcommand{\Dmtr}[4]%
+{\left|\begin{array}{rr}#1 & #2\\#3 & #4\end{array}\right|}
+\def\cA{{\bf \mathcal A}}
+\def\cB{{\bf \mathcal B}}
+\def\cC{{\bf \mathcal C}}
+\def\cD{{\bf \mathcal D}}
+\newcommand{\LDU}{{\mathrm{LDU}}}
+\newcommand{\Adj}{{\mathrm{Adj}}}
+\newcommand{\diag}{{\mathrm{diag}}}
+\newcommand{\rank}{{\mathrm{rank}}}
+\def\al{{\alpha}}
+\def\be{\beta}
+\def\de{\delta}
+\def\ve{\varepsilon}
+\def\si{\sigma}
+\def\ga{\gamma}
+\def\di{{\bf {\rm diag}}}
+\def\De{\Delta}
+\def\G{\Gamma}
+\def\cA{{\bf \mathcal A}}
+\def\cU{{\bf \mathcal U}}
+\def\cL{{\bf \mathcal L}}
+\def\cH{{\bf \mathcal H}}
+\def\cG{{\bf \mathcal G}}
+
+
+
+\title{Recursive Matrix Algorithms: \\ Quick QR decomposition of matrices}
+ 
+ 
+%\subtitle {Overview and Future Research}
+
+\author{Gennadi Malaschonok }
+
+\institute{National University of Kyiv-Mohyla Academy, Kiev, Ukraine \\
+Kyiv Academt University, Kiev, Ukraine }
+
+\date{1 April, 2020}
+
+
+
+\frame{\titlepage}
+
+ 
+
+% outline
+\AtBeginSection[]
+{
+\begin{frame}
+\frametitle{Table of contents}
+\tableofcontents[currentsection, hideothersubsections]
+\end{frame}
+}
+
+
+ 
+\begin{frame}{Introduction: QR-decomposition problem}
+
+ \begin{itemize}
+ \item 
+The problem of the orthogonal decomposition of matrices is still known as the QR-decomposition problem. 
+It is one of the subtasks that are associated with spectral decomposition. 
+ \item 
+Given the matrix A, it is required to represent it as a product of two factors, $$A=QR,$$ where Q is a unitary matrix (orthogonal in the case of real numbers), R is an upper triangular matrix.
+ \item 
+There are a large number of different approaches \cite{1}-\cite{4} to the problem of computing the orthogonal decomposition, including fast recursive algorithm \cite{5}. 
+However,  all these algorithms have cubic complexity. 
+ \item 
+In this paper, we consider the algorithm of orthogonal decomposition, \bf{which has the complexity of matrix multiplication}. This algorithm was published by A. Schonhage in 1973 year \cite{0}.
+ \\
+  \end{itemize}
+\end{frame}
+
+
+ 
+
+\begin{frame}{Notations}
+
+ 
+For definiteness, we will consider an algorithm applied to a square matrix $ A $ over a field of real numbers.
+ Consider the case of a $2\times 2$ matrix. The desired decomposition $ A = QR $ has the form:
+ %
+ $$   \left(\begin{array}{cc}\alpha  & \beta \\  \gamma &  \delta \end{array}\right) =   \left(\begin{array}{cc}c & -s \\ s & c \end{array}\right)    \left(\begin{array}{cc}a  & b \\ 0 & d \end{array}\right) , $$
+ %  
+where  $ s ^ 2 + c ^ 2 = 1 $. 
+  If $ \gamma = 0 $ then we can set $ c = 1, \ s = 0 $. If $ \gamma \ne 0 $, then
+  $ \Delta = \alpha ^ 2 + \gamma ^ 2 > 0.  $
+   Then we get
+ $  c \alpha+ s \gamma=a,  \ \  \ c \gamma -s\alpha =0 $ and  
+ $  c= a \alpha /\Delta,  \ \  s= a \gamma/ \Delta.   $
+ 
+ Therefore, $ 1 = s ^ 2 + c ^ 2 = a ^ 2 / \Delta $, hence $ | a | = \sqrt {\Delta} $.
+ $$  c= \alpha/ {\sqrt \Delta },  \ \ \ \  s=   \gamma/ {\sqrt \Delta }. $$
+ We denote such a matrix $ Q $ by $ g _ {\alpha, \gamma} $.
+
+
+ \end{frame}
+\begin{frame}{Sequential $ QR $ decomposition: one step}
+
+Let the matrix $ A $ be given: 
+ \begin{itemize} 
+
+\item $a_{i, j}=\alpha $, $ a_{i + 1, j}=\gamma $,
+\item all the elements to the left of them be zero: $ \forall (s <j ) :( a_{i, s} = 0) \ \& \ (a_{i + 1, s} = 0) $,
+\item     $ G_ {i, j} = \, \mathbf{diag} (I_ {i-1}, g _ {\alpha, \gamma}, I_ {n-i-1}) $.
+
+\end{itemize}
+{\bf Then: }
+ \begin{itemize} \item
+the matrix $ G_ {i, j} A $ differs from $ A $ 
+only in two rows $ i $ and $ i + 1 $, 
+\item
+  all the elements to the left of the column $ j $ remain zero, 
+
+\item$ a_{i + 1, j}=0 $
+  \end{itemize}
+  \end{frame}
+
+
+\begin{frame}{Sequential $ QR $ decomposition: Given's algorithm}
+  
+  
+ $$\bf\textbf{  Algorithm }$$ 
+
+\begin{itemize} 
+
+\item
+ (1).  
+First we reset the elements under the diagonal in the left column:
+ $$ A_{1}=G_{1,1}G_{2,1}... G_{n-2,1}G_{n-1,1}A$$
+
+  \item
+ (2).  
+Then we reset the elements that are under the diagonal in the second column:
+ $$ A_{2}=G_{2,2}G_{3,2}... G_{n-2,2}G_{n-1,2}A_{1}$$
+ \item
+ (k).   Denote $G_{(k)}= G_{k,k}G_{k-1,k}... G_{n-2,k}G_{n-1,k} $, для $k=1,2,..,n-1$.  
+ Then, to calculate the elements of the $ k $ th column, we need to obtain the product of matrices
+%
+  $$ A_k=G_{(k)} A_{k-1}.$$
+%
+\item (n-1).  
+At the end of the calculation, the element in the $ n-1 $ column will be reseted: $A_{n-1}=G_{(n-1)}A_{n-2}=G_{n-1,n-1} A_{n-2}.$ 
+\end{itemize}  
+  
+
+  \end{frame}
+
+
+\begin{frame}{Sequential $ QR $ decomposition: complexity}
+  You can find the number of operations. It is necessary to calculate the $ (n ^ 2-n) / 2 $ turn matrices and for each of them 6 operations must be performed. when calculating $ A_ {1} $, the number of multiplications of the Givens matrices into columns of two elements (4 multiplications and 2 additions) is $ (n-1) ^ 2 $. When calculating $ A_ {2} $, the number of such multiplications is $ ( n-2) ^ 2 $, and so on. As a result, we get
+ %
+ $$6 (n^2-n)/2+ 6\sum_{i=1..n-1} i^2 = 3 n^2-3n+  6(n-1)(2n-1)n/6\approx 2n^3$$
+%
+Here we count the number of all arithmetic operations and the operations of extracting the square root.
+
+%  
+
+ 
+\end{frame}
+
+
+\begin{frame}{ $ QR_G $ decomposition}
+  
+ $\bf\textbf{  Algorithm }  \ for \ M = \left (\begin {array} {cc} A & B \\ C & D \end {array} \right) $. 
+ 
+\begin{itemize} 
+\item
+  (1).  $ QR_G $ decomposition of the block  
+  $C$:  
+  $$C=Q_{1}C_{1},\ M_{1}=\, \mathbf{diag}(I,Q_{1}) M= \left(\begin{array}{cc}A & B \\ C_{1} & D_{1} \end{array}\right).$$
+ \item
+ (2). Cancellation of a parallelogram composed of two triangular blocks: the lower triangular part $ A ^ L $ of the block $ A $ and the upper triangular part  $ C ^ U_ {1} $ of the block $ C_ {1} $ 
+ 
+ 
+ $ \left(\begin{array}{c}A \\ C_{1} \end{array}\right) = \left(\begin{array}{c}A_{1} \\ 0 \end{array}\right),\   M_{2}= Q_{2} M_{1}= \left(\begin{array}{cc}A_{1} & B_{1} \\ 0 & D_{2} \end{array}\right).$
+ 
+\item
+ (3).   $ QR_G $ decomposition of the $ D_ {2} $ block:
+   $D_{2}=Q_{3}D_{3}$.  
+   
+   $R=\, \mathbf{diag}(I,Q_{3}) M_{2}= 
+   \left(\begin{array}{cc}A_{1} & B_{1} \\ 0 & D_{3} \end{array}\right). $
+\end{itemize}
+ As a result, we get:
+ $$M=Q^T R, \ \ Q=\, \mathbf{diag}(I,Q_{3}) Q_{2} \, \mathbf{diag}(I,Q_{1}). $$
+ 
+ It remains to describe the parallelogram cancellation procedure.
+
+
+\end{frame}
+
+
+
+\begin{frame}{ QP-decomposition}
+  We are looking for the factorization of the matrix:
+ $$M = QP = Q \left (\begin {array} {c} A ^ U \\ 0 \end {array} \right), \ \ M= \left(\begin{array}{c}A  \\ R_{1}  \end{array}\right)  = \left(\begin{array}{cc}a & c \\ b & d \\ f^U & g \\ 0 & h^U \end{array}\right) $$
+%
+ $$P1= Q_{ld}  \left(\begin{array}{c}b \\ f^U \end{array}\right) =  \left(\begin{array}{c}b^U \\ 0 \end{array}\right) , P2= Q_{lu}  \left(\begin{array}{c}a \\ b^U \end{array}\right) = \left(\begin{array}{c}a^U \\ 0 \end{array}\right) , $$
+ $$  \left(\begin{array}{c}d_{1} \\ g_{1} \end{array}\right) =Q_{ld} \left(\begin{array}{c}d_{1} \\ g_{1} \end{array}\right) ,   \left(\begin{array}{c}c_{1} \\ d_{2} \end{array}\right) =Q_{lu} \left(\begin{array}{c}c  \\ d_{1} \end{array}\right) ,$$
+ $$P3= Q_{rd}  \left(\begin{array}{c}g_{1}  \\ h^U \end{array}\right) =  \left(\begin{array}{c}g_{1}^U \\ 0 \end{array}\right) , P4= Q_{ru}  \left(\begin{array}{c}d_{2} \\ g^U \end{array}\right) = \left(\begin{array}{c}d_{2} ^U \\ 0 \end{array}\right) $$
+%
+ $$ \left(\begin{array}{c}A_{1}  \\ 0 \end{array}\right) = Q  \left(\begin{array}{c}A  \\ R_{1}  \end{array}\right) ,\ \ A_{1}= \left(\begin{array}{cc}a^U & c_{1} \\ 0 & d_{2}^U \end{array}\right) , $$
+%
+ $$Q=\, \mathbf{diag}(I_{n/2}, Q_{ru}, I_{n/2} )\, \mathbf{diag}(Q_{lu}  ,Q_{rd} ) \, 
+\mathbf{diag}(I_{n/2},Q_{ld} ,I_{n/2})$$
+ %
+\end{frame}
+
+
+\begin{frame}{Complexity of QP-decomposition}
+ 
+ Let multiplication of two matrices of size $ n \times n $  needs $ \gamma n ^ \beta $ operations, 
+ $ n = 2 ^ k $.
+  The number of multiplications of matrix blocks of size $ n / 2 \times n / 2 $ is 24. Hence the total number of operations: $$ Cp (2n) = 4Cp (n) + 24M (n / 2). $$  
+ %
+ $$ Cp(2^{k+1}) = 4 Cp(2^{k}) + 24 M(2^{k-1})=4^{k }Cp(2^1) 
+ +24\gamma\sum_{i=0}^{k-1} 4^{k-i-1}  2^{i\beta}= $$ 
+$$24 \gamma (n^2/4)\frac{2^{k(\beta-2) }-1}{2^{(\beta-2)}-1}+6n^2 =
+6 \gamma  \frac{n^{\beta }-n^2}{2^{\beta }-4}+6n^2$$ 
+    $$ Cp(n)  =  \frac{6 \gamma n^{\beta } }{2^\beta(2^{\beta}-4)}+ \frac{3n^2 }{2}(1- \frac{ \gamma  }{  2^{\beta}-4 })$$ 
+\end{frame}
+
+\begin{frame}{The complexity of  $ QR_G $ decomposition algorithm}
+%
+Complexity of the matrix multiplication is $ M (n) = \gamma n ^ \beta $,
+the complexity of canceling the parallelogram is $ Cp (n) = \alpha n ^ \beta $, where $ \alpha, \beta, \gamma $ are constants,
+  $\alpha= \frac{6 \gamma }{2^\beta(2^{\beta}-4)}$ and $n=2^k$  then:
+%
+  $$C (n)=2C (n/2) + Cp(n) + 6M(n/2)=2C (2^{k-1}) + Cp(2^{k}) + 6M(2^{k-1})= $$
+%
+ $$  C(2^0) 2^{k}  + \sum_{i=0}^{k} 2^{k-i}Cp(2^{i}) + 6\sum_{i=0}^{k} 2^{k-i} M(2^{i-1})=     \alpha \sum_{i=0}^{k} 2^{k-i} 2^{i\beta} + 6\gamma\sum_{i=0}^{k} 2^{k-i} 2^{(i-1)\beta}= 
+ $$ $$
+ (\alpha 2^{k} + 6\gamma 2^{k-\beta}) \sum_{i=0}^{k}   2^{i(\beta-1)}=(\alpha   +  6\gamma 2^{-\beta})\frac{2^{\beta }n^{\beta }-2n}{2^{\beta  }-2}$$ 
+ $$
+ =  \frac{\gamma 6 (2^{\beta  }-3)( n^{\beta }-\frac{2n}{2^\beta} )}{ (2^{\beta}-4)(2^{\beta  }-2)} $$
+\end{frame}
+
+
+
+\begin{frame}{ Conclusion}
+ %
+Thus, presented algorithm has the complexity of matrix multiplication. If we apply the standard matrix multiplication ($ 2n ^ 3 $ operations for the matrix ${n \times n}$), then we need only $\approx  2.5 n ^ 3 $ operations.
+\end{frame}
+ 
+ \begin{frame}
+ \begin{thebibliography}{5}
+ \bibitem{0} 
+ Schönhage A.: Unitre Transformationen groer Matrizen, Numerische 
+Mathematik 20, pp. 409-417 (1973)
+\bibitem{1} 
+Golub, Gene H.; Van Loan, Charles F. (1996), Matrix Computations (3rd ed.), Johns Hopkins, ISBN 978-0-8018-5414-9
+\bibitem{2} 
+[10] Nicholas J. Higham. Accuracy and Stability of Numerical Algorithms. Second
+edition, Society for Industrial and Applied Mathematics, Philadelphia, PA,
+USA, 2002.
+\bibitem{3}   
+Press, WH; Teukolsky, SA; Vetterling, WT; Flannery, BP (2007), "Section 2.10. QR Decomposition", Numerical Recipes: The Art of Scientific Computing (3rd ed.), New York: Cambridge University Press, ISBN 978-0-521-88068-8
+\bibitem{4} 
+Stoer, Josef; Bulirsch, Roland (2002), Introduction to Numerical Analysis (3rd ed.), Springer, ISBN 0-387-95452-X.  
+ \bibitem{5}  
+Daniel Kressner, Ana Susnjara. Fast QR decomposition of HODLR matrices
+(Submitted on 27 Sep 2018)  arXiv:1809.10585v1 
+\end{thebibliography}
+ \end{frame}
+ 
+\end{document} 
